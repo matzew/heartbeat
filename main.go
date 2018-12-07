@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
@@ -37,9 +38,11 @@ type Heartbeat struct {
 }
 
 var (
-	sink      string
-	label     string
-	periodStr string
+	sink         string
+	label        string
+	periodStr    string
+	randomFactor float64
+	irregular    bool
 
 	httpClient = &http.Client{}
 )
@@ -48,6 +51,8 @@ func init() {
 	flag.StringVar(&sink, "sink", "", "the host url to heartbeat to")
 	flag.StringVar(&label, "label", "", "a special label")
 	flag.StringVar(&periodStr, "period", "1000", "the number of seconds between heartbeats")
+	flag.Float64Var(&randomFactor, "randomness", 0.5, "the probability that a heartbeat will fire")
+	flag.BoolVar(&irregular, "irregular", false, "if true, whether a heartbeat fires will be controlled by --randomness")
 }
 
 func main() {
@@ -65,6 +70,10 @@ func main() {
 	}
 	ticker := time.NewTicker(period)
 	for {
+		if irregular && rand.NormFloat64() < randomFactor {
+			continue
+		}
+
 		hb.Sequence++
 
 		message := []byte(hb.Label)
