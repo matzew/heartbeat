@@ -47,16 +47,16 @@ var (
 func init() {
 	flag.StringVar(&sink, "sink", "", "the host url to heartbeat to")
 	flag.StringVar(&label, "label", "", "a special label")
-	flag.StringVar(&periodStr, "period", "1000", "the number of seconds between heartbeats")
+	flag.StringVar(&periodStr, "period", "100", "the number of milliseconds between heartbeats")
 }
 
 func main() {
 	flag.Parse()
 	var period time.Duration
 	if p, err := strconv.Atoi(periodStr); err != nil {
-		period = time.Duration(1000) * time.Microsecond
+		period = time.Duration(100) * time.Millisecond
 	} else {
-		period = time.Duration(p) * time.Microsecond
+		period = time.Duration(p) * time.Millisecond
 	}
 
 	hb := &Heartbeat{
