@@ -46,15 +46,15 @@ var (
 
 func init() {
 	flag.StringVar(&sink, "sink", "", "the host url to heartbeat to")
-	flag.StringVar(&label, "label", "", "a special label")
-	flag.StringVar(&periodStr, "period", "100", "the number of milliseconds between heartbeats")
+	flag.StringVar(&label, "label", "<3", "a special label")
+	flag.StringVar(&periodStr, "period", "400", "the number of milliseconds between heartbeats")
 }
 
 func main() {
 	flag.Parse()
 	var period time.Duration
 	if p, err := strconv.Atoi(periodStr); err != nil {
-		period = time.Duration(100) * time.Millisecond
+		period = time.Duration(400) * time.Millisecond
 	} else {
 		period = time.Duration(p) * time.Millisecond
 	}
@@ -67,9 +67,8 @@ func main() {
 	for {
 		hb.Sequence++
 
-		message := []byte(hb.Label)
 		go func() {
-			if err := postMessage(message); err != nil {
+			if err := postMessage(hb); err != nil {
 				log.Printf("sending event to channel failed: %v", err)
 			}
 		}()
@@ -78,16 +77,21 @@ func main() {
 	}
 }
 
-func postMessage(message []byte) error {
-	ctx := cloudevents.EventContext{
+// Creates a CloudEvent Context for a given heartbeat.
+func cloudEventsContext() *cloudevents.EventContext {
+	return &cloudevents.EventContext{
 		CloudEventsVersion: cloudevents.CloudEventsVersion,
 		EventType:          "dev.knative.source.heartbeats",
 		EventID:            uuid.New().String(),
 		Source:             "heartbeats-demo",
 		EventTime:          time.Now(),
 	}
+}
 
-	req, err := cloudevents.Binary.NewRequest(sink, message, ctx)
+func postMessage(hb *Heartbeat) error {
+	ctx := cloudEventsContext()
+
+	req, err := cloudevents.Binary.NewRequest(sink, hb, *ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to create http request")
 	}
